@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+
 	"github.com/kgugunava/effective_mobile_golang/internal/domain"
 )
 
@@ -48,4 +49,20 @@ func (s *SubscriptionService) GetSubscriptionByID(ctx context.Context, id uuid.U
 		return domain.Subscription{}, err
 	}
 	return transferPostgresEntityToServiceDomain(subscription), nil
+}
+
+func (s *SubscriptionService) UpdateSubscriptionPut(ctx context.Context, id uuid.UUID, newSubscription *domain.Subscription) (*domain.Subscription, error) {
+
+	var updatedSubscription domain.Subscription
+
+	if isSubscriptionValid(newSubscription) {
+		updatedSubscriptionPostgresEntity, err := s.subscriptionRepo.UpdatePut(ctx, transferServiceDomainToPostgresEntity(*newSubscription), id)
+		if err != nil {
+			return nil, err
+		}
+		updatedSubscription = transferPostgresEntityToServiceDomain(updatedSubscriptionPostgresEntity)
+	}
+
+	return &updatedSubscription, nil
+
 }

@@ -44,9 +44,9 @@ func NewApp() *App {
 
 	subscriptionsRepository := postgres.NewSubscriptionRepository(app.DB.Pool)
 
-	pullRequestService := service.NewSubscriptionService(subscriptionsRepository)
+	subscriptionsService := service.NewSubscriptionService(subscriptionsRepository)
 
-	apiSubscriptions := handlers.NewSubscriptionAPI(pullRequestService)
+	apiSubscriptions := handlers.NewSubscriptionAPI(subscriptionsService)
 
     
     app.Router = api.NewRouter(*apiSubscriptions)

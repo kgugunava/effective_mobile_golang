@@ -66,3 +66,40 @@ func (r *SubscriptionRepository) GetByID(ctx context.Context, id uuid.UUID) (Sub
 
 	return entity, nil
 }
+
+func (r *SubscriptionRepository) UpdatePut(ctx context.Context, sub SubscriptionEntity, id uuid.UUID) (SubscriptionEntity, error) {
+	query := `
+		UPDATE subscriptions
+		SET service_name = $2, price = $3, user_id = $4, start_date = $5, end_date = $6
+		WHERE subscription_id = $1
+		RETURNING subscription_id, service_name, price, user_id, start_date, end_date`
+
+	var updated SubscriptionEntity
+	err := r.pool.QueryRow(ctx, query,
+		id,
+		sub.ServiceName,
+		sub.Price,
+		sub.UserID,
+		sub.StartDate,
+		sub.EndDate,
+	).Scan(
+		&updated.SubscriptionID,
+		&updated.ServiceName,
+		&updated.Price,
+		&updated.UserID,
+		&updated.StartDate,
+		&updated.EndDate,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return SubscriptionEntity{}, fmt.Errorf("subscription not found")
+		}
+		return SubscriptionEntity{}, fmt.Errorf("update failed: %w", err)
+	}
+
+	return updated, nil
+}
+
+// func (r *SubscriptionRepository) UpdatePatch(ctx context.Context, id uuid.UUID, changes map[string]interface{}) (SubscriptionEntity, error) {
+
+// }

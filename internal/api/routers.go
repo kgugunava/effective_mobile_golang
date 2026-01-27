@@ -63,5 +63,11 @@ func getRoutes(apiHandler handlers.SubscriptionAPI) []Route {
 			"/read/:id",
 			apiHandler.SubscriptionReadGet,
 		},
+		{
+			"SubscriptionUpdatePut",
+			http.MethodPut,
+			"/update_put/:id",
+			apiHandler.SubscriptionUpdatePut,
+		},
 	}
 }

@@ -26,6 +26,31 @@ func transferDatetoString(d time.Time) string {
 	return s
 }
 
+func transferUpdatePutRequestToServiceDomain(req api_models.SubscriptionUpdatePutRequest, id uuid.UUID) (*service_domain.Subscription, error) {
+	var startDate time.Time
+	var err error
+	if startDate, err = transferStringMonthYearToDate(req.StartDate); err != nil {
+		return nil, fmt.Errorf("invalid start_date: %w", err)
+	}
+	var endDate *time.Time
+	if req.EndDate != "" {
+		parsed, err := transferStringMonthYearToDate(req.EndDate)
+		if err != nil {
+			return nil, fmt.Errorf("invalid end_date: %w", err)
+		}
+		endDate = &parsed
+	}
+
+	return &service_domain.Subscription{
+		SubscriptionID: id,
+		ServiceName: *req.ServiceName,
+		Price:       *req.Price,
+		UserID:      *req.UserID,
+		StartDate:   startDate,
+		EndDate:     endDate,
+	}, nil
+}
+
 func transferCreateRequestToServiceDomain(req api_models.SubscriptionCreatePostRequest) (*service_domain.Subscription, error) {
 	var startDate time.Time
 	var err error

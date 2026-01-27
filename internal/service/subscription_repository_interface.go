@@ -11,4 +11,5 @@ import (
 type SubscriptionRepository interface {
 	Create(ctx context.Context, subscription postgres.SubscriptionEntity) error
 	GetByID(ctx context.Context, id uuid.UUID) (postgres.SubscriptionEntity, error)
+	UpdatePut(ctx context.Context, sub postgres.SubscriptionEntity, id uuid.UUID) (postgres.SubscriptionEntity, error)
 }
