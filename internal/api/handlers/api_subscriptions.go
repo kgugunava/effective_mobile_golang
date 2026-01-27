@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -32,10 +33,9 @@ func (api *SubscriptionAPI) SubscriptionCreatePost(c *gin.Context) {
 		return
 	}
 
-
 	transferedNewSubscription, err := transferCreateRequestToServiceDomain(newSubscription)
 	if err != nil {
-		fmt.Println("here")
+		fmt.Errorf(err.Error())
 	}
 	createdSubscription, err := api.subscriptionService.CreateSubscription(c.Request.Context(), transferedNewSubscription)
 	if err != nil {
@@ -177,4 +177,30 @@ func (api *SubscriptionAPI) SubscriptionUpdatePut(c *gin.Context) {
 		Subscription: transferServiceDomainToAPIModel(updatedSubscription),
 	})
 	
+}
+
+func (api *SubscriptionAPI) SubscriptionDelete(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(400, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code: "INVALID_ID",
+				Message: "invalid subscription ID format",
+			},
+		})
+		return
+	}
+
+	if err := api.subscriptionService.DeleteSubscriptionByID(c.Request.Context(), id); err != nil {
+		c.JSON(500, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code: "INTERNAL_ERROR",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }

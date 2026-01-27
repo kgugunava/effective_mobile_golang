@@ -88,3 +88,10 @@ func (s *SubscriptionService) UpdateSubscriptionPatch(ctx context.Context, id uu
 
 	return &transferedUpdatedSubscription, nil
 }
+
+func (s *SubscriptionService) DeleteSubscriptionByID(ctx context.Context, id uuid.UUID) error {
+	if err := s.subscriptionRepo.DeleteByID(ctx, id); err != nil {
+		return err
+	}
+	return nil
+}

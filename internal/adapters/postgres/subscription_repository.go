@@ -158,3 +158,18 @@ func (r *SubscriptionRepository) UpdatePatch(ctx context.Context, id uuid.UUID, 
 
 	return updated, nil
 }
+
+func (r *SubscriptionRepository) DeleteByID(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM subscriptions WHERE subscription_id = $1`
+
+	result, err := r.pool.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete subscription: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("no deleted rows")
+	}
+
+	return nil
+}

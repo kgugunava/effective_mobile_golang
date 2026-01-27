@@ -13,4 +13,5 @@ type SubscriptionService interface {
 	GetSubscriptionByID(ctx context.Context, id uuid.UUID) (domain.Subscription, error)
 	UpdateSubscriptionPut(ctx context.Context, id uuid.UUID, newSubscription *domain.Subscription) (*domain.Subscription, error)
 	UpdateSubscriptionPatch(ctx context.Context, id uuid.UUID, newSubscription *domain.Subscription) (*domain.Subscription, error) 
+	DeleteSubscriptionByID(ctx context.Context, id uuid.UUID) error
 }
