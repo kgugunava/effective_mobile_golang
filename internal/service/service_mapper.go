@@ -5,9 +5,9 @@ import (
 	"github.com/kgugunava/effective_mobile_golang/internal/domain"
 )
 
-func transferServiceDomainToPostgresEntity(subscription domain.Subscription) postgres.Subscription {
-	entity := postgres.Subscription{
-		SubscriptionID:          subscription.SubscriptionID,
+func transferServiceDomainToPostgresEntity(subscription domain.Subscription) postgres.SubscriptionEntity {
+	entity := postgres.SubscriptionEntity{
+		SubscriptionID: subscription.SubscriptionID,
 		UserID:      subscription.UserID,
 		ServiceName: subscription.ServiceName,
 		Price:       subscription.Price,
@@ -15,9 +15,25 @@ func transferServiceDomainToPostgresEntity(subscription domain.Subscription) pos
 	}
 
 	if subscription.EndDate != nil {
-		entity.EndDate = *subscription.EndDate
+		entity.EndDate = subscription.EndDate
 	}
 
 	return entity
 
+}
+
+func transferPostgresEntityToServiceDomain(entity postgres.SubscriptionEntity) domain.Subscription {
+	domain := domain.Subscription{
+		SubscriptionID: entity.SubscriptionID,
+		ServiceName: entity.ServiceName,
+		Price: entity.Price,
+		UserID: entity.UserID,
+		StartDate: entity.StartDate,
+	}
+
+	if entity.EndDate != nil {
+		domain.EndDate = entity.EndDate
+	}
+
+	return domain
 }

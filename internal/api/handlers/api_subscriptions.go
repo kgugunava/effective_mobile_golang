@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	api_models "github.com/kgugunava/effective_mobile_golang/internal/api/models"
 )
@@ -37,7 +38,6 @@ func (api *SubscriptionAPI) SubscriptionCreatePost(c *gin.Context) {
 		fmt.Println("here")
 	}
 	createdSubscription, err := api.subscriptionService.CreateSubscription(c.Request.Context(), transferedNewSubscription)
-	fmt.Println(transferCreateRequestToServiceDomain(newSubscription))
 	if err != nil {
 		c.JSON(500, api_models.ErrorResponse{
 			Error: api_models.ErrorResponseError{
@@ -50,4 +50,33 @@ func (api *SubscriptionAPI) SubscriptionCreatePost(c *gin.Context) {
 
 	c.JSON(201, transferServiceDomainToAPIModel(createdSubscription))
 
+}
+
+func (api *SubscriptionAPI) SubscriptionReadGet(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(400, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code: "INVALID_ID",
+				Message: "invalid subscription ID format",
+			},
+		})
+		return
+	}
+
+	subscription, err := api.subscriptionService.GetSubscriptionByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(500, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code: "INTERNAL_ERROR",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(200, api_models.SubscriptionReadGet200Response{
+		Subscription: transferServiceDomainToAPIModel(&subscription),
+	})
 }

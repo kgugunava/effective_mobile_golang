@@ -41,3 +41,11 @@ func (s *SubscriptionService) CreateSubscription(ctx context.Context, subscripti
 	}
 	return subscription, nil
 }
+
+func (s *SubscriptionService) GetSubscriptionByID(ctx context.Context, id uuid.UUID) (domain.Subscription, error) {
+	subscription, err := s.subscriptionRepo.GetByID(ctx, id)
+	if err != nil {
+		return domain.Subscription{}, err
+	}
+	return transferPostgresEntityToServiceDomain(subscription), nil
+}

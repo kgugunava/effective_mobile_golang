@@ -57,5 +57,11 @@ func getRoutes(apiHandler handlers.SubscriptionAPI) []Route {
 			"/create",
 			apiHandler.SubscriptionCreatePost,
 		},
+		{
+			"SubscriptionReadGet",
+			http.MethodGet,
+			"/read/:id",
+			apiHandler.SubscriptionReadGet,
+		},
 	}
 }
