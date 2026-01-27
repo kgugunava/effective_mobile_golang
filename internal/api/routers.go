@@ -69,5 +69,11 @@ func getRoutes(apiHandler handlers.SubscriptionAPI) []Route {
 			"/update_put/:id",
 			apiHandler.SubscriptionUpdatePut,
 		},
+		{
+			"SubscriptionUpdatePatch",
+			http.MethodPatch,
+			"/update_patch/:id",
+			apiHandler.SubscriptionUpdatePatch,
+		},
 	}
 }

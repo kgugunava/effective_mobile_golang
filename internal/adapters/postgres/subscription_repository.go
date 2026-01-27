@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"errors"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5"
@@ -100,6 +101,60 @@ func (r *SubscriptionRepository) UpdatePut(ctx context.Context, sub Subscription
 	return updated, nil
 }
 
-// func (r *SubscriptionRepository) UpdatePatch(ctx context.Context, id uuid.UUID, changes map[string]interface{}) (SubscriptionEntity, error) {
+func (r *SubscriptionRepository) UpdatePatch(ctx context.Context, id uuid.UUID, changes map[string]interface{}) (SubscriptionEntity, error) {
+	if len(changes) == 0 {
+		return r.GetByID(ctx, id)
+	}
 
-// }
+	allowedFields := map[string]bool{
+		"service_name": true,
+		"price":        true,
+		"end_date":     true,
+	}
+
+	var setClauses []string
+	var args []interface{}
+	argIndex := 2 // $1 = id, $2+ = значения
+
+	for field, value := range changes {
+		if !allowedFields[field] {
+			return SubscriptionEntity{}, fmt.Errorf("field '%s' cannot be updated", field)
+		}
+
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", field, argIndex))
+		args = append(args, value)
+		argIndex++
+	}
+
+	if len(setClauses) == 0 {
+		return r.GetByID(ctx, id)
+	}
+
+	query := fmt.Sprintf(`
+		UPDATE subscriptions 
+		SET %s 
+		WHERE subscription_id = $1 
+		RETURNING subscription_id, user_id, service_name, price, start_date, end_date`,
+		strings.Join(setClauses, ", "),
+	)
+
+	args = append([]interface{}{id}, args...)
+
+	var updated SubscriptionEntity
+	err := r.pool.QueryRow(ctx, query, args...).Scan(
+		&updated.SubscriptionID,
+		&updated.UserID,
+		&updated.ServiceName,
+		&updated.Price,
+		&updated.StartDate,
+		&updated.EndDate,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return SubscriptionEntity{}, err
+		}
+		return SubscriptionEntity{}, fmt.Errorf("failed to patch subscription: %w", err)
+	}
+
+	return updated, nil
+}

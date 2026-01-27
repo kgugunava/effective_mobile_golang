@@ -11,5 +11,6 @@ import (
 type SubscriptionService interface {
 	CreateSubscription(ctx context.Context, subscription *domain.Subscription) (*domain.Subscription, error)
 	GetSubscriptionByID(ctx context.Context, id uuid.UUID) (domain.Subscription, error)
-	UpdateSubscriptionPut(ctx context.Context, id uuid.UUID, newSubscription *domain.Subscription) (*domain.Subscription, error) 
+	UpdateSubscriptionPut(ctx context.Context, id uuid.UUID, newSubscription *domain.Subscription) (*domain.Subscription, error)
+	UpdateSubscriptionPatch(ctx context.Context, id uuid.UUID, newSubscription *domain.Subscription) (*domain.Subscription, error) 
 }

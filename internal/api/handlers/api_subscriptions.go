@@ -81,21 +81,55 @@ func (api *SubscriptionAPI) SubscriptionReadGet(c *gin.Context) {
 	})
 }
 
-// func (api *SubscriptionAPI) SubscriptionUpdatePatch(c *gin.Context) {
-// 	idStr := c.Param("id")
-// 	id, err := uuid.Parse(idStr)
-// 	if err != nil {
-// 		c.JSON(400, api_models.ErrorResponse{
-// 			Error: api_models.ErrorResponseError{
-// 				Code: "INVALID_ID",
-// 				Message: "invalid subscription ID format",
-// 			},
-// 		})
-// 		return
-// 	}
+func (api *SubscriptionAPI) SubscriptionUpdatePatch(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(400, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code: "INVALID_ID",
+				Message: "invalid subscription ID format",
+			},
+		})
+		return
+	}
 
+	var newSubscription api_models.SubscriptionUpdatePutRequest
 
-// }
+	if err := c.ShouldBindJSON(&newSubscription); err != nil {
+		c.JSON(500, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code: "INTERNAL_ERROR",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	transferedNewSubscription, err := transferUpdatePutRequestToServiceDomain(newSubscription, id)
+	if err != nil {
+		fmt.Printf("%w", err)
+	}
+
+	fmt.Println(newSubscription, transferedNewSubscription)
+
+	updatedSubscription, err := api.subscriptionService.UpdateSubscriptionPatch(c.Request.Context(), id, &transferedNewSubscription)
+
+	if err != nil {
+		c.JSON(500, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code: "INTERNAL_ERROR",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(200, api_models.SubscriptionUpdatePut200Response{
+		Subscription: transferServiceDomainToAPIModel(updatedSubscription),
+	})
+
+}
 
 func (api *SubscriptionAPI) SubscriptionUpdatePut(c *gin.Context) {
 	idStr := c.Param("id")
@@ -127,7 +161,7 @@ func (api *SubscriptionAPI) SubscriptionUpdatePut(c *gin.Context) {
 		fmt.Println("update error")
 	}
 
-	updatedSubscription, err := api.subscriptionService.UpdateSubscriptionPut(c.Request.Context(), id, transferedNewSubscription)
+	updatedSubscription, err := api.subscriptionService.UpdateSubscriptionPut(c.Request.Context(), id, &transferedNewSubscription)
 
 	if err != nil {
 		c.JSON(500, api_models.ErrorResponse{

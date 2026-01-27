@@ -66,3 +66,25 @@ func (s *SubscriptionService) UpdateSubscriptionPut(ctx context.Context, id uuid
 	return &updatedSubscription, nil
 
 }
+
+func (s *SubscriptionService) UpdateSubscriptionPatch(ctx context.Context, id uuid.UUID, newSubscription *domain.Subscription) (*domain.Subscription, error) {
+	changes := make(map[string]interface{})
+	if newSubscription.ServiceName != "" {
+		changes["service_name"] = newSubscription.ServiceName
+	}
+	if newSubscription.Price != 0 {
+		changes["price"] = newSubscription.Price
+	}
+	if newSubscription.EndDate != nil {
+		changes["end_date"] = newSubscription.EndDate
+	}
+
+	updatedSubscriptionPostgresEntity, err := s.subscriptionRepo.UpdatePatch(ctx, id, changes)
+	if err != nil {
+		return nil, err
+	}
+
+	transferedUpdatedSubscription := transferPostgresEntityToServiceDomain(updatedSubscriptionPostgresEntity)
+
+	return &transferedUpdatedSubscription, nil
+}
