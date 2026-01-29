@@ -2,22 +2,25 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 	"errors"
+	"fmt"
+	"log/slog"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type SubscriptionRepository struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	logger *slog.Logger
 }
 
-func NewSubscriptionRepository(pool *pgxpool.Pool) *SubscriptionRepository {
+func NewSubscriptionRepository(pool *pgxpool.Pool, logger *slog.Logger) *SubscriptionRepository {
 	return &SubscriptionRepository{
-		pool: pool,
+		pool:   pool,
+		logger: logger,
 	}
 }
 
@@ -33,12 +36,19 @@ func (r *SubscriptionRepository) Create(ctx context.Context, subscription Subscr
 		subscription.ServiceName,
 		subscription.Price,
 		subscription.StartDate,
-		subscription.EndDate, 
+		subscription.EndDate,
 	)
 	if err != nil {
+		r.logger.Error("failed to insert subscription into DB",
+			slog.String("subscription_id", subscription.SubscriptionID.String()),
+			slog.Any("error", err),
+		)
 		return fmt.Errorf("failed to insert subscription: %w", err)
 	}
 
+	r.logger.Info("subscription created successfully",
+		slog.String("subscription_id", subscription.SubscriptionID.String()),
+	)
 	return nil
 }
 
@@ -60,11 +70,21 @@ func (r *SubscriptionRepository) GetByID(ctx context.Context, id uuid.UUID) (Sub
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			r.logger.Warn("subscription not found",
+				slog.String("subscription_id", id.String()),
+			)
 			return SubscriptionEntity{}, fmt.Errorf("subscription not found")
 		}
+		r.logger.Error("failed to get subscription",
+			slog.String("subscription_id", id.String()),
+			slog.Any("error", err),
+		)
 		return SubscriptionEntity{}, fmt.Errorf("failed to get subscription: %w", err)
 	}
 
+	r.logger.Debug("subscription retrieved",
+		slog.String("subscription_id", id.String()),
+	)
 	return entity, nil
 }
 
@@ -93,16 +113,29 @@ func (r *SubscriptionRepository) UpdatePut(ctx context.Context, sub Subscription
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			r.logger.Warn("subscription not found for update",
+				slog.String("subscription_id", id.String()),
+			)
 			return SubscriptionEntity{}, fmt.Errorf("subscription not found")
 		}
+		r.logger.Error("update failed",
+			slog.String("subscription_id", id.String()),
+			slog.Any("error", err),
+		)
 		return SubscriptionEntity{}, fmt.Errorf("update failed: %w", err)
 	}
 
+	r.logger.Info("subscription updated (PUT)",
+		slog.String("subscription_id", id.String()),
+	)
 	return updated, nil
 }
 
 func (r *SubscriptionRepository) UpdatePatch(ctx context.Context, id uuid.UUID, changes map[string]interface{}) (SubscriptionEntity, error) {
 	if len(changes) == 0 {
+		r.logger.Debug("no fields to update, returning current state",
+			slog.String("subscription_id", id.String()),
+		)
 		return r.GetByID(ctx, id)
 	}
 
@@ -114,20 +147,20 @@ func (r *SubscriptionRepository) UpdatePatch(ctx context.Context, id uuid.UUID, 
 
 	var setClauses []string
 	var args []interface{}
-	argIndex := 2 // $1 = id, $2+ = значения
+	argIndex := 2
 
 	for field, value := range changes {
 		if !allowedFields[field] {
+			r.logger.Error("attempt to update non-allowed field",
+				slog.String("field", field),
+				slog.String("subscription_id", id.String()),
+			)
 			return SubscriptionEntity{}, fmt.Errorf("field '%s' cannot be updated", field)
 		}
 
 		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", field, argIndex))
 		args = append(args, value)
 		argIndex++
-	}
-
-	if len(setClauses) == 0 {
-		return r.GetByID(ctx, id)
 	}
 
 	query := fmt.Sprintf(`
@@ -151,11 +184,23 @@ func (r *SubscriptionRepository) UpdatePatch(ctx context.Context, id uuid.UUID, 
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return SubscriptionEntity{}, err
+			r.logger.Warn("subscription not found for patch",
+				slog.String("subscription_id", id.String()),
+			)
+			return SubscriptionEntity{}, fmt.Errorf("subscription not found")
 		}
+		r.logger.Error("failed to patch subscription",
+			slog.String("subscription_id", id.String()),
+			slog.Any("error", err),
+			slog.Any("changes", changes),
+		)
 		return SubscriptionEntity{}, fmt.Errorf("failed to patch subscription: %w", err)
 	}
 
+	r.logger.Info("subscription patched",
+		slog.String("subscription_id", id.String()),
+		slog.Any("changes", changes),
+	)
 	return updated, nil
 }
 
@@ -164,12 +209,22 @@ func (r *SubscriptionRepository) DeleteByID(ctx context.Context, id uuid.UUID) e
 
 	result, err := r.pool.Exec(ctx, query, id)
 	if err != nil {
+		r.logger.Error("failed to delete subscription",
+			slog.String("subscription_id", id.String()),
+			slog.Any("error", err),
+		)
 		return fmt.Errorf("failed to delete subscription: %w", err)
 	}
 
 	if result.RowsAffected() == 0 {
-		return fmt.Errorf("no deleted rows")
+		r.logger.Warn("delete requested but subscription not found",
+			slog.String("subscription_id", id.String()),
+		)
+		return fmt.Errorf("subscription not found")
 	}
 
+	r.logger.Info("subscription deleted",
+		slog.String("subscription_id", id.String()),
+	)
 	return nil
 }

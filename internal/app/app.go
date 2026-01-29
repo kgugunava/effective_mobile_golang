@@ -1,6 +1,8 @@
 package app
 
 import (
+	"log/slog"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/kgugunava/effective_mobile_golang/internal/adapters/postgres"
@@ -14,9 +16,10 @@ type App struct {
 	Cfg config.Config
 	Router *gin.Engine
 	DB *postgres.Postgres
+	Logger *slog.Logger
 }
 
-func NewApp() *App {
+func NewApp(logger *slog.Logger) *App {
 	app := &App{
 		Cfg: config.NewConfig(),
 	}
@@ -42,11 +45,11 @@ func NewApp() *App {
     
     app.DB = &db
 
-	subscriptionsRepository := postgres.NewSubscriptionRepository(app.DB.Pool)
+	subscriptionsRepository := postgres.NewSubscriptionRepository(app.DB.Pool, app.Logger)
 
-	subscriptionsService := service.NewSubscriptionService(subscriptionsRepository)
+	subscriptionsService := service.NewSubscriptionService(subscriptionsRepository, app.Logger)
 
-	apiSubscriptions := handlers.NewSubscriptionAPI(subscriptionsService)
+	apiSubscriptions := handlers.NewSubscriptionAPI(subscriptionsService, app.Logger)
 
     
     app.Router = api.NewRouter(*apiSubscriptions)
