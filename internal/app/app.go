@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kgugunava/effective_mobile_golang/internal/adapters/postgres"
 	"github.com/kgugunava/effective_mobile_golang/internal/api"
@@ -15,41 +16,41 @@ import (
 type App struct {
 	Cfg config.Config
 	Router *gin.Engine
-	DB *postgres.Postgres
 	Logger *slog.Logger
 }
 
-func NewApp(logger *slog.Logger) *App {
+func NewApp(db *pgxpool.Pool, logger *slog.Logger, cfg config.Config) *App {
 	app := &App{
-		Cfg: config.NewConfig(),
+		Cfg: cfg,
+		Logger: logger,
 	}
-	app.Cfg.InitConfig()
 
-	db := postgres.NewPostgres()
 
-    if err := db.ConnectToPostgresMainDatabase(app.Cfg); err != nil {
-        panic(err)
-    }
+	// db := postgres.NewPostgres()
 
-	if err := db.CreateDatabase(app.Cfg); err != nil {
-        panic(err)
-    }
+    // if err := db.ConnectToPostgresMainDatabase(app.Cfg); err != nil {
+    //     panic(err)
+    // }
+
+	// if err := db.CreateDatabase(app.Cfg); err != nil {
+    //     panic(err)
+    // }
     
-    if err := db.ConnectToDatabase(app.Cfg); err != nil {
-        panic(err)
-    }
+    // if err := db.ConnectToDatabase(app.Cfg); err != nil {
+    //     panic(err)
+    // }
     
-    if err := db.CreateDatabaseTables(); err != nil {
-        panic(err)
-    }
+    // if err := db.CreateDatabaseTables(); err != nil {
+    //     panic(err)
+    // }
     
-    app.DB = &db
+    // app.DB = &db
 
-	subscriptionsRepository := postgres.NewSubscriptionRepository(app.DB.Pool, app.Logger)
+	subscriptionsRepository := postgres.NewSubscriptionRepository(db, logger)
 
-	subscriptionsService := service.NewSubscriptionService(subscriptionsRepository, app.Logger)
+	subscriptionsService := service.NewSubscriptionService(subscriptionsRepository, logger)
 
-	apiSubscriptions := handlers.NewSubscriptionAPI(subscriptionsService, app.Logger)
+	apiSubscriptions := handlers.NewSubscriptionAPI(subscriptionsService, logger)
 
     
     app.Router = api.NewRouter(*apiSubscriptions)
