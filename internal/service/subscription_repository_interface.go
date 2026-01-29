@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/kgugunava/effective_mobile_golang/internal/adapters/postgres"
 
@@ -14,4 +15,5 @@ type SubscriptionRepository interface {
 	UpdatePut(ctx context.Context, sub postgres.SubscriptionEntity, id uuid.UUID) (postgres.SubscriptionEntity, error)
 	UpdatePatch(ctx context.Context, id uuid.UUID, changes map[string]interface{}) (postgres.SubscriptionEntity, error)
 	DeleteByID(ctx context.Context, id uuid.UUID) error
+	GetSubscriptionsList(ctx context.Context, serviceName string, userID uuid.UUID, startDate time.Time, endDate time.Time) ([]postgres.SubscriptionEntity, error) 
 }

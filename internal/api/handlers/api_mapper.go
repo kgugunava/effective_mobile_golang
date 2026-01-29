@@ -93,3 +93,24 @@ func transferServiceDomainToAPIModel(s *service_domain.Subscription) api_models.
 
 	return resp
 }
+
+func transferServiceDomainListToAPIModelList(domainSubscriptions []service_domain.Subscription) []api_models.Subscription {
+	apiModelSubscriptionList := []api_models.Subscription{}
+	
+	for _, s := range(domainSubscriptions) {
+		apiModelSubscription := api_models.Subscription{
+			SubscriptionID: s.SubscriptionID,
+			ServiceName: s.ServiceName,
+			Price: s.Price,
+			UserID: s.UserID,
+			StartDate: transferDatetoString(s.StartDate),
+		}
+		if s.EndDate != nil {
+			str := s.EndDate.Format("01-2006")
+			apiModelSubscription.EndDate = str
+		}
+		apiModelSubscriptionList = append(apiModelSubscriptionList, apiModelSubscription)
+	}
+
+	return apiModelSubscriptionList
+}

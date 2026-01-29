@@ -37,3 +37,20 @@ func transferPostgresEntityToServiceDomain(entity postgres.SubscriptionEntity) d
 
 	return domain
 }
+
+func transferPostgresEntityListsToServiceDomainList(entities []postgres.SubscriptionEntity) []domain.Subscription {
+	var domainSubscriptions []domain.Subscription
+
+	for _, entity := range(entities) {
+		domain := domain.Subscription{
+			SubscriptionID: entity.SubscriptionID,
+			ServiceName: entity.ServiceName,
+			Price: entity.Price,
+			UserID: entity.UserID,
+			StartDate: entity.StartDate,
+		}
+		domainSubscriptions = append(domainSubscriptions, domain)
+	}
+
+	return domainSubscriptions
+}

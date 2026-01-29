@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -167,4 +168,22 @@ func (s *SubscriptionService) DeleteSubscriptionByID(ctx context.Context, id uui
 		slog.String("subscription_id", id.String()),
 	)
 	return nil
+}
+
+func (s *SubscriptionService) ListSubscriptions(ctx context.Context, serviceName string, userID uuid.UUID, startDate time.Time, endDate time.Time) ([]domain.Subscription, error) {
+	postgresEntities, err := s.subscriptionRepo.GetSubscriptionsList(ctx, serviceName, userID, startDate, endDate)
+	if err != nil {
+		s.logger.Error("failed to get subscriptions list in repository",
+			slog.String("service_name", serviceName),
+			slog.String("user_id", userID.String()),
+			slog.String("start_date", startDate.String()),
+			slog.String("end_date", endDate.String()),
+			slog.Any("error", err),
+		)
+		return []domain.Subscription{}, err
+	}
+
+	domainSubscriptionsList := transferPostgresEntityListsToServiceDomainList(postgresEntities)
+
+	return domainSubscriptionsList, nil
 }

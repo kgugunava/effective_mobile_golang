@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -14,4 +15,5 @@ type SubscriptionService interface {
 	UpdateSubscriptionPut(ctx context.Context, id uuid.UUID, newSubscription *domain.Subscription) (*domain.Subscription, error)
 	UpdateSubscriptionPatch(ctx context.Context, id uuid.UUID, newSubscription *domain.Subscription) (*domain.Subscription, error) 
 	DeleteSubscriptionByID(ctx context.Context, id uuid.UUID) error
+	ListSubscriptions(ctx context.Context, ServiceName string, UserID uuid.UUID, StartDate time.Time, EndDate time.Time) ([]domain.Subscription, error) 
 }

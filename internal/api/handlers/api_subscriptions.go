@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -332,4 +333,83 @@ func (api *SubscriptionAPI) SubscriptionDelete(c *gin.Context) {
 		slog.String("subscription_id", id.String()),
 	)
 	c.Status(http.StatusNoContent)
+}
+
+func (api *SubscriptionAPI) SubscriptionListGet(c *gin.Context) {
+	serviceNameStr := c.Query("service_name")
+	userIDStr := c.Query("user_id")
+	startDateStr := c.Query("start_date")
+	endDateStr := c.Query("end_date")
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		api.logger.Warn("invalid user ID format in list request",
+			slog.String("method", "GET"),
+			slog.String("user_id", userIDStr),
+		)
+		c.JSON(400, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code:    "INVALID_ID",
+				Message: "invalid user ID format",
+			},
+		})
+		return
+	}
+
+	var startDate, endDate time.Time
+
+	if startDate, err = time.Parse("01-2006", startDateStr); err != nil {
+		api.logger.Warn("invalid start date format in list request",
+			slog.String("method", "GET"),
+			slog.String("start_date", startDateStr),
+		)
+		c.JSON(400, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code:    "INVALID_START_DATE",
+				Message: "invalid start date format",
+			},
+		})
+		return
+	}
+
+	if endDate, err = time.Parse("01-2006", endDateStr); err != nil {
+		api.logger.Warn("invalid end date format in list request",
+			slog.String("method", "GET"),
+			slog.String("end_date", endDateStr),
+		)
+		c.JSON(400, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code:    "INVALID_END_DATE",
+				Message: "invalid end date format",
+			},
+		})
+		return
+	}
+
+	domainSubscriptionsList, err := api.subscriptionService.ListSubscriptions(c.Request.Context(), serviceNameStr, userID, startDate, endDate)
+
+	if err != nil {
+		api.logger.Error("failed to get subscriptions list",
+			slog.String("method", "GET"),
+			slog.String("service_name", serviceNameStr),
+			slog.String("user_id", userIDStr),
+			slog.String("start_date", startDateStr),
+			slog.String("end_date", endDateStr),
+			slog.Any("error", err),
+		)
+		c.JSON(500, api_models.ErrorResponse{
+			Error: api_models.ErrorResponseError{
+				Code:    "INTERNAL_ERROR",
+				Message: err.Error(),
+			},
+		})
+		return
+	}
+
+	subscriptions := transferServiceDomainListToAPIModelList(domainSubscriptionsList)
+
+	c.JSON(200, api_models.SubscriptionListGetResponse200{
+		Subscriptions: subscriptions,
+	})
+
 }

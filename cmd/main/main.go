@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kgugunava/effective_mobile_golang/internal/app"
 	"github.com/kgugunava/effective_mobile_golang/internal/config"
@@ -34,7 +35,7 @@ func main() {
 	db, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
 		logger.Error("failed to connect to database", slog.Any("error", err))
-		os.Exit(1)
+		log.Fatal("error in connecting to DB: ", err)
 	}
 	defer db.Close()
 
@@ -52,7 +53,7 @@ func runMigrations(logger *slog.Logger, dbURL string) {
 			slog.String("db_url", dbURL),
 			slog.Any("error", err),
 		)
-		os.Exit(1)
+		log.Fatal("error in migrations: ", err)
 	}
 	defer m.Close()
 
@@ -61,7 +62,7 @@ func runMigrations(logger *slog.Logger, dbURL string) {
 			slog.String("db_url", dbURL),
 			slog.Any("error", err),
 		)
-		os.Exit(1)
+		log.Fatal("error in migrations: ", err)
 	}
 
 	version, _, _ := m.Version()

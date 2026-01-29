@@ -81,5 +81,11 @@ func getRoutes(apiHandler handlers.SubscriptionAPI) []Route {
 			"/delete/:id",
 			apiHandler.SubscriptionDelete,
 		},
+		{
+			"SubscriptionsListGet",
+			http.MethodGet,
+			"/subscriptions_list/",
+			apiHandler.SubscriptionListGet,
+		},
 	}
 }

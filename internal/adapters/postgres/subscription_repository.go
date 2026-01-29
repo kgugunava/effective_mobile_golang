@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -227,4 +228,80 @@ func (r *SubscriptionRepository) DeleteByID(ctx context.Context, id uuid.UUID) e
 		slog.String("subscription_id", id.String()),
 	)
 	return nil
+}
+
+func (r *SubscriptionRepository) GetSubscriptionsList(ctx context.Context, serviceName string, userID uuid.UUID, startDate time.Time, endDate time.Time) ([]SubscriptionEntity, error) {
+	query := `
+		SELECT subscription_id, service_name, price, user_id, start_date, end_date
+		FROM subscriptions
+		WHERE 1=1`
+
+	var args []interface{}
+	argPos := 1
+
+	query += fmt.Sprintf(" AND user_id = $%d", argPos)
+	args = append(args, userID)
+	argPos++
+
+	if serviceName != "" {
+		query += fmt.Sprintf(" AND service_name = $%d", argPos)
+		args = append(args, serviceName)
+		argPos++
+	}
+
+	if !startDate.IsZero() {
+		query += fmt.Sprintf(" AND start_date >= $%d", argPos)
+		args = append(args, startDate)
+		argPos++
+	}
+
+	if !endDate.IsZero() {
+		query += fmt.Sprintf(" AND end_date <= $%d", argPos)
+		args = append(args, endDate)
+		argPos++
+	}
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		r.logger.Error("failed to execute list query",
+			slog.Any("error", err),
+			slog.String("user_id", userID.String()),
+		)
+		return nil, fmt.Errorf("failed to fetch subscriptions: %w", err)
+	}
+	defer rows.Close()
+
+	var subscriptions []SubscriptionEntity
+	for rows.Next() {
+		var sub SubscriptionEntity
+		err := rows.Scan(
+			&sub.SubscriptionID,
+			&sub.ServiceName,
+			&sub.Price,
+			&sub.UserID,
+			&sub.StartDate,
+			&sub.EndDate,
+		)
+		if err != nil {
+			r.logger.Error("failed to scan subscription row",
+				slog.Any("error", err),
+			)
+			return nil, fmt.Errorf("failed to scan subscription: %w", err)
+		}
+		subscriptions = append(subscriptions, sub)
+	}
+
+	if err = rows.Err(); err != nil {
+		r.logger.Error("row iteration error",
+			slog.Any("error", err),
+		)
+		return nil, fmt.Errorf("subscription iteration failed: %w", err)
+	}
+
+	r.logger.Debug("subscriptions list fetched",
+		slog.String("user_id", userID.String()),
+		slog.Int("count", len(subscriptions)),
+	)
+
+	return subscriptions, nil
 }
